@@ -3,27 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TASK</title>
-
-<!-- 🔔 OneSignal -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-
-<script>
-window.OneSignalDeferred = window.OneSignalDeferred || [];
-
-OneSignalDeferred.push(async function(OneSignal) {
-  await OneSignal.init({
-    appId: "d929255f-b46d-4c5f-9e92-d6fa3de2cc73",
-    notifyButton: { enable: true },
-    allowLocalhostAsSecureOrigin: true
-  });
-});
-</script>
+<title>TASK APP</title>
 
 <style>
 body{
   margin:0;
-  font-family:-apple-system;
+  font-family:Arial;
   background:#0b1220;
   color:white;
   display:flex;
@@ -33,54 +18,52 @@ body{
 .app{
   width:100%;
   max-width:420px;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
+  padding:10px;
 }
-
-header{
-  text-align:center;
-  padding:15px;
-  font-size:20px;
-}
-
-.page{display:none;padding:12px;flex:1;}
-.active{display:block;}
 
 .card{
   background:rgba(255,255,255,0.08);
-  padding:12px;
-  border-radius:15px;
-  margin:8px 0;
+  padding:10px;
+  margin:10px 0;
+  border-radius:12px;
 }
 
 input{
   width:100%;
-  padding:12px;
+  padding:10px;
   margin:5px 0;
-  border-radius:10px;
   border:none;
-  background:rgba(255,255,255,0.1);
-  color:white;
+  border-radius:8px;
 }
 
 button{
   width:100%;
   padding:10px;
-  border-radius:10px;
+  margin-top:5px;
   border:none;
+  border-radius:8px;
   background:#0a84ff;
   color:white;
+  font-weight:bold;
 }
 
-.task-actions{
+.small-btn{
+  width:48%;
+}
+
+.row{
   display:flex;
-  gap:5px;
+  gap:4%;
 }
 
-.task-actions button{
-  flex:1;
-  font-size:12px;
+.task{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px;
+  background:rgba(255,255,255,0.05);
+  border-radius:10px;
+  margin-top:8px;
 }
 </style>
 </head>
@@ -89,17 +72,21 @@ button{
 
 <div class="app">
 
-<header>📱 TASK</header>
+<h2>📱 TASK APP</h2>
 
-<!-- HOME -->
-<div id="home" class="page active">
+<!-- 🔔 NOTIFICATIONS -->
+<div class="card">
+  <button onclick="enableNotifications()">🔔 Включи известия</button>
+</div>
 
+<!-- ➕ ADD TASK -->
 <div class="card">
   <input id="taskText" placeholder="Задача">
   <input id="taskTime" type="time">
-  <button onclick="addTask()">Добави</button>
+  <button onclick="addTask()">➕ Добави задача</button>
 </div>
 
+<!-- LIST -->
 <div id="list"></div>
 
 </div>
@@ -108,37 +95,64 @@ button{
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-/* ADD TASK */
+/* 🔔 NOTIFICATIONS */
+function enableNotifications(){
+  Notification.requestPermission().then(p=>{
+    if(p==="granted"){
+      alert("✔ Известията са включени");
+    }
+  });
+}
+
+/* ➕ ADD */
 function addTask(){
-  let text=document.getElementById("taskText").value;
-  let time=document.getElementById("taskTime").value;
+  let text = document.getElementById("taskText").value;
+  let time = document.getElementById("taskTime").value;
 
-  if(!text || !time) return;
+  if(!text || !time) return alert("Попълни всичко");
 
-  tasks.push({text,time});
+  tasks.push({text,time,done:false});
   save();
   render();
 }
 
-/* SAVE */
+/* 💾 SAVE */
 function save(){
   localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
-/* RENDER */
+/* 🗑 DELETE */
+function del(i){
+  tasks.splice(i,1);
+  save();
+  render();
+}
+
+/* ✅ DONE */
+function done(i){
+  tasks[i].done = !tasks[i].done;
+  save();
+  render();
+}
+
+/* 📱 RENDER */
 function render(){
-  let list=document.getElementById("list");
+  let list = document.getElementById("list");
   list.innerHTML="";
 
   tasks.forEach((t,i)=>{
     let div=document.createElement("div");
-    div.className="card";
+    div.className="task";
 
     div.innerHTML=`
-      📝 ${t.text}<br>⏰ ${t.time}
-      <div class="task-actions">
-        <button onclick="done(${i})">✅ Готово</button>
-        <button onclick="del(${i})">🗑 Изтрий</button>
+      <div>
+        <b>${t.text}</b><br>
+        ⏰ ${t.time} ${t.done ? "✔" : ""}
+      </div>
+
+      <div class="row">
+        <button class="small-btn" onclick="done(${i})">✔</button>
+        <button class="small-btn" onclick="del(${i})">🗑</button>
       </div>
     `;
 
@@ -146,21 +160,7 @@ function render(){
   });
 }
 
-/* DONE */
-function done(i){
-  tasks.splice(i,1);
-  save();
-  render();
-}
-
-/* DELETE */
-function del(i){
-  tasks.splice(i,1);
-  save();
-  render();
-}
-
-/* 🔔 AUTO NOTIFICATIONS (по час) */
+/* ⏰ AUTO CHECK TIME */
 setInterval(()=>{
   let now = new Date();
   let h = String(now.getHours()).padStart(2,'0');
@@ -168,23 +168,10 @@ setInterval(()=>{
   let current = h+":"+m;
 
   tasks.forEach(t=>{
-    if(t.time === current){
-      
-      // browser notification
-      if(Notification.permission === "granted"){
-        new Notification("⏰ TASK", {
-          body: t.text
-        });
-      }
-
-      // OneSignal notification (локално тригерване)
-      if(window.OneSignal){
-        OneSignalDeferred.push(function(OneSignal){
-          OneSignal.sendSelfNotification(
-            "⏰ TASK",
-            t.text,
-            null
-          );
+    if(t.time === current && !t.done){
+      if(Notification.permission==="granted"){
+        new Notification("⏰ ЗАДАЧА",{
+          body:t.text
         });
       }
     }
@@ -192,13 +179,9 @@ setInterval(()=>{
 
 },60000);
 
-/* ASK PERMISSION */
-Notification.requestPermission();
-
 render();
 
 </script>
 
-</div>
 </body>
 </html>
