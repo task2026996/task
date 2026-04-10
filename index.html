@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TASK</title>
+
+<style>
+body{
+  margin:0;
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI";
+  background: radial-gradient(circle at top,#1e293b,#0b1220);
+  color:white;
+  display:flex;
+  justify-content:center;
+}
+
+/* APP FRAME */
+.app{
+  width:100%;
+  max-width:420px;
+  min-height:100vh;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 0 40px rgba(0,0,0,0.6);
+}
+
+/* HEADER */
+header{
+  text-align:center;
+  padding:15px;
+  font-size:20px;
+  font-weight:bold;
+}
+
+/* PAGES */
+.page{display:none;padding:12px;flex:1;}
+.active{display:block;}
+
+/* CARDS */
+.card{
+  background:rgba(255,255,255,0.08);
+  backdrop-filter: blur(15px);
+  border-radius:18px;
+  padding:12px;
+  margin:8px 0;
+}
+
+/* INPUTS */
+input{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:12px;
+  border:none;
+  outline:none;
+  background:rgba(255,255,255,0.1);
+  color:white;
+}
+
+/* BUTTONS */
+button{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  background:#0a84ff;
+  color:white;
+  font-weight:bold;
+}
+
+/* BOTTOM NAV */
+nav{
+  display:flex;
+  gap:8px;
+  padding:10px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  border-top:1px solid rgba(255,255,255,0.1);
+}
+
+nav button{
+  flex:1;
+  background:transparent;
+  font-size:14px;
+}
+
+/* DESKTOP */
+@media (min-width:900px){
+  body{padding:30px;}
+  .app{
+    border-radius:25px;
+    height:90vh;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header>📱 TASK</header>
+
+<!-- HOME -->
+<div id="home" class="page active">
+
+  <div class="card">
+    <h3>Задачи за деня</h3>
+    <input id="taskText" placeholder="Напиши задача">
+    <input id="taskTime" type="time">
+    <button onclick="addTask()">Добави задача</button>
+  </div>
+
+  <div class="card">
+    <button onclick="enableNotifications()">🔔 Включи известия</button>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<!-- PRO -->
+<div id="pro" class="page">
+  <div class="card">
+    <h3>PRO зона</h3>
+    <input id="code" placeholder="Въведи код">
+    <button onclick="checkCode()">Отключи PRO</button>
+    <div id="proArea"></div>
+  </div>
+</div>
+
+<!-- BORED -->
+<div id="bored" class="page">
+  <div class="card">
+    <h3>Скучно ми е 😄</h3>
+    <button onclick="randomTask()">Натисни ме</button>
+    <p id="fun"></p>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <button onclick="show('home')">🏠</button>
+  <button onclick="show('pro')">⭐</button>
+  <button onclick="show('bored')">🎲</button>
+</nav>
+
+</div>
+
+<script>
+
+let tasks = [];
+
+/* NAVIGATION */
+function show(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+}
+
+/* ADD TASK */
+function addTask(){
+  let text = document.getElementById("taskText").value;
+  let time = document.getElementById("taskTime").value;
+
+  if(!text || !time) return;
+
+  tasks.push({text,time});
+  render();
+}
+
+/* SHOW TASKS */
+function render(){
+  let list = document.getElementById("list");
+  list.innerHTML = "";
+
+  tasks.forEach(t=>{
+    let div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `📝 ${t.text}<br>⏰ ${t.time}`;
+    list.appendChild(div);
+  });
+}
+
+/* NOTIFICATIONS */
+function enableNotifications(){
+  Notification.requestPermission();
+}
+
+/* CHECK TIME FOR NOTIFICATIONS */
+setInterval(()=>{
+  let now = new Date();
+  let h = String(now.getHours()).padStart(2,'0');
+  let m = String(now.getMinutes()).padStart(2,'0');
+  let current = h + ":" + m;
+
+  tasks.forEach(t=>{
+    if(t.time === current){
+      new Notification("⏰ TASK", {
+        body: t.text
+      });
+    }
+  });
+},60000);
+
+/* PRO SYSTEM */
+function checkCode(){
+  if(document.getElementById("code").value === "560"){
+    document.getElementById("proArea").innerHTML =
+      "✅ PRO отключен! Добре дошъл в TASK PRO";
+  } else {
+    alert("Грешен код!");
+  }
+}
+
+/* BORED MODE */
+function randomTask(){
+  let ideas = [
+    "Разходка 🚶",
+    "Пий вода 💧",
+    "10 лицеви 💪",
+    "Слушай музика 🎧",
+    "Напиши на приятел 💬"
+  ];
+
+  document.getElementById("fun").innerText =
+    ideas[Math.floor(Math.random()*ideas.length)];
+}
+
+/* SERVICE WORKER */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js');
+}
+
+</script>
+
+</body>
+</html>
